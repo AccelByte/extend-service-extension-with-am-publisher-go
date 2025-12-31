@@ -21,7 +21,7 @@
       "post": {
         "summary": "Join",
         "description": "Join",
-        "operationId": "PlayerJoin",
+        "operationId": "Service_Join",
         "responses": {
           "200": {
             "description": "A successful response.",
@@ -48,12 +48,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "type": "object",
-              "properties": {
-                "playerId": {
-                  "type": "string"
-                }
-              }
+              "$ref": "#/definitions/ServiceJoinBody"
             }
           }
         ],
@@ -69,6 +64,14 @@
     }
   },
   "definitions": {
+    "ServiceJoinBody": {
+      "type": "object",
+      "properties": {
+        "playerId": {
+          "type": "string"
+        }
+      }
+    },
     "protobufAny": {
       "type": "object",
       "properties": {
