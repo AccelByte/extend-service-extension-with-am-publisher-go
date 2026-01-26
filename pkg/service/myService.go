@@ -93,6 +93,7 @@ func (g MyServiceServerImpl) Check(
 	}
 
 	//We just want to make sure it exists.
+
 	_, err := g.csStorage.AdminGetGameRecordHandlerV1Short(input)
 	if err != nil {
 		return &pb.CheckResponse{
