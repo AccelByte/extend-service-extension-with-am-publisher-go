@@ -29,6 +29,7 @@ import (
 	"github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/repository"
 
 	"github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/factory"
+	"github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/service/cloudsave"
 	"github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/service/iam"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/prometheus/client_golang/prometheus"
@@ -154,6 +155,8 @@ func main() {
 		grpc.ChainStreamInterceptor(streamServerInterceptors...),
 	)
 
+	namespace := common.GetEnv("AB_NAMESPACE", "accelbyte")
+
 	// Configure IAM authorization
 	clientId := configRepo.GetClientId()
 	clientSecret := configRepo.GetClientSecret()
@@ -164,7 +167,8 @@ func main() {
 	}
 
 	// Setup publisher client connection
-	publisherServiceAddr := "localhost:" + common.GetEnv("ASYNC_MESSAGING_PUBLISHER_GRPC_PORT", "7474")
+	publisherServiceHost := common.GetEnv("ASYNC_MESSAGING_PUBLISHER_GRPC_HOST", "localhost")
+	publisherServiceAddr := publisherServiceHost + ":" + common.GetEnv("ASYNC_MESSAGING_PUBLISHER_GRPC_PORT", "7474")
 	publisherConn, err := grpc.NewClient(
 		publisherServiceAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -175,11 +179,17 @@ func main() {
 	}
 	defer publisherConn.Close()
 
+	// Initialize the AccelByte CloudSave service
+	adminGameRecordService := cloudsave.AdminGameRecordService{
+		Client:          factory.NewCloudsaveClient(configRepo),
+		TokenRepository: tokenRepo,
+	}
+
 	publisherClient := asyncMessaging.NewAsyncMessagingPublisherServiceClient(publisherConn)
 
 	// Register Guild Service
 	publishEnabled := strings.ToLower(common.GetEnv("ASYNC_MESSAGING_PUBLISHER_ENABLED", "true")) == "true"
-	myServiceServer := service.NewMyServiceServer(publisherClient, publishEnabled)
+	myServiceServer := service.NewMyServiceServer(publisherClient, publishEnabled, &adminGameRecordService, namespace)
 	pb.RegisterServiceServer(s, myServiceServer)
 
 	// Enable gRPC Reflection

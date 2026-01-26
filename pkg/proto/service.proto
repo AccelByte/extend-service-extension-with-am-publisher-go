@@ -33,6 +33,22 @@ service Service {
       }
     };
   }
+  
+  rpc Check(CheckRequest) returns (CheckResponse) {
+    option (google.api.http) = {
+      get: "/v1/admin/namespace/{namespace}/check/{player_id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Check"
+      description: "Check"
+      security: {
+        security_requirement: {
+          key: "Bearer"
+          value: {}
+        }
+      }
+    };
+  }
 }
 
 message JoinRequest {
@@ -41,6 +57,15 @@ message JoinRequest {
 }
 
 message JoinResponse {
+}
+
+message CheckRequest {
+  string namespace = 1;
+  string player_id = 2;
+}
+
+message CheckResponse {
+  string status = 1;
 }
 
 // OpenAPI options for the entire API.

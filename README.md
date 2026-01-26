@@ -153,8 +153,13 @@ Customizing your Extend Service Extension app involves modifying the `service.pr
 
       - For AGS Private Cloud customers:
          - `ADMIN:ROLE [READ]` to validate access token and permissions
+         - `ADMIN:NAMESPACE:{namespace}:NAMESPACE [READ]` to validate access namespace
+         - `ADMIN:NAMESPACE:{namespace}:CLOUDSAVE:RECORD [CREATE,READ,UPDATE,DELETE]` to create, read, update, and delete cloudsave records
       - For AGS Shared Cloud customers:
          - IAM -> Roles (Read)
+         - Basic -> Namespace (Read)
+         - Cloud Save -> Game Records (Create, Read, Update, Delete)
+
 ## Setup
 
 To be able to run this app, you will need to follow these setup steps.
@@ -226,6 +231,8 @@ This app can be tested locally through the Swagger UI.
    Inside the postman collection, use `get-client-access-token` request to get client token or use `get-user-access-token` request to get user access token.
 
 3. Set **ASYNC_MESSAGING_PUBLISHER_ENABLED** to `false`. This is to allow local testing without a publisher gRPC server.
+
+   > :info: `Check` endpoint requires permission to access cloudsave. It will get data stored by event handler with async messaging consumer sample app, so this app need to be deployed in `AccelByte Gaming Services`.
 
 4. The REST API service can then be tested by opening Swagger UI at 
    `http://localhost:8000/guild/apidocs/`. Use this to create an API request 

@@ -1,4 +1,4 @@
-// Copyright (c) 2025 AccelByte Inc. All Rights Reserved.
+// Copyright (c) 2025-2026 AccelByte Inc. All Rights Reserved.
 // This is licensed software from AccelByte Inc, for limitations
 // and restrictions contact your company contract manager.
 
@@ -12,6 +12,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/AccelByte/accelbyte-go-sdk/cloudsave-sdk/pkg/cloudsaveclient/admin_game_record"
+	"github.com/AccelByte/accelbyte-go-sdk/services-api/pkg/service/cloudsave"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -19,6 +21,8 @@ import (
 type MyServiceServerImpl struct {
 	pb.UnimplementedServiceServer
 	publisherClient asyncMessaging.AsyncMessagingPublisherServiceClient
+	csStorage       *cloudsave.AdminGameRecordService
+	namespace       string
 	publishEnabled  bool
 }
 
@@ -31,10 +35,14 @@ type PlayerJoinedEvent struct {
 func NewMyServiceServer(
 	publisherClient asyncMessaging.AsyncMessagingPublisherServiceClient,
 	publishEnabled bool,
+	csStorage *cloudsave.AdminGameRecordService,
+	namespace string,
 ) *MyServiceServerImpl {
 	return &MyServiceServerImpl{
 		publisherClient: publisherClient,
 		publishEnabled:  publishEnabled,
+		csStorage:       csStorage,
+		namespace:       namespace,
 	}
 }
 
@@ -54,9 +62,11 @@ func (g MyServiceServerImpl) Join(
 	}
 
 	msg := &asyncMessaging.PublishMessageRequest{
-		Body:     string(bodyBytes),
-		Topic:    topic,
-		Metadata: map[string]string{}, // Empty metadata
+		Body:  string(bodyBytes),
+		Topic: topic,
+		Metadata: map[string]string{
+			"PlayerId": req.PlayerId,
+		},
 	}
 
 	if !g.publishEnabled {
@@ -69,4 +79,28 @@ func (g MyServiceServerImpl) Join(
 	}
 
 	return &pb.JoinResponse{}, nil
+}
+
+func (g MyServiceServerImpl) Check(
+	ctx context.Context, req *pb.CheckRequest,
+) (*pb.CheckResponse, error) {
+
+	key := "player_joined_event_" + req.PlayerId
+	input := &admin_game_record.AdminGetGameRecordHandlerV1Params{
+		Key:       key,
+		Namespace: req.Namespace,
+		Context:   ctx,
+	}
+
+	//We just want to make sure it exists.
+	_, err := g.csStorage.AdminGetGameRecordHandlerV1Short(input)
+	if err != nil {
+		return &pb.CheckResponse{
+			Status: "data not found",
+		}, nil
+	} else {
+		return &pb.CheckResponse{
+			Status: "joined",
+		}, nil
+	}
 }
